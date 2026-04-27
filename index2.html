@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VVC CRM</title>
+
+<style>
+body { margin:0; font-family: Arial; background:#f4f6f9; }
+
+/* LOGIN */
+#loginPage {
+  display:flex;
+  height:100vh;
+  justify-content:center;
+  align-items:center;
+}
+.login-box {
+  background:#fff;
+  padding:30px;
+  border-radius:10px;                                                  
+  box-shadow:0 2px 10px rgba(0,0,0,0.2);
+  width:300px;
+}
+.login-box input, .login-box button {
+  width:100%;
+  padding:10px;
+  margin:10px 0;
+}
+
+/* APP */
+#crmApp { display:none; }
+
+.sidebar {
+  width:220px;
+  height:100vh;
+  background:#1e293b;
+  color:#fff;
+  position:fixed;
+}
+.sidebar h2 { text-align:center; padding:15px; }
+.sidebar button {
+  width:100%;
+  padding:12px;
+  border:none;
+  background:none;
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+}
+.sidebar button:hover { background:#334155; }
+
+.header {
+  margin-left:220px;
+  background:#fff;
+  padding:15px;
+}
+.content {
+  margin-left:220px;
+  padding:20px;
+}
+
+.card {
+  display:none;
+  background:#fff;
+  padding:15px;
+  border-radius:8px;
+}
+.active { display:block; }
+
+table {
+  width:100%;
+  border-collapse:collapse;
+}
+th, td {
+  padding:8px;
+  border-bottom:1px solid #ddd;
+}
+
+button {
+  padding:6px 10px;
+  border:none;
+  border-radius:5px;
+  cursor:pointer;
+}
+.edit { background:#16a34a; color:#fff; }
+.delete { background:#dc2626; color:#fff; }
+.add { background:#2563eb; color:#fff; }
+
+input {
+  padding:8px;
+  margin:5px 0;
+  width:100%;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage">
+  <div class="login-box">
+    <h2>CRM Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p id="error" style="color:red;"></p>
+  </div>
+</div>
+
+<!-- CRM -->
+<div id="crmApp">
+
+<div class="sidebar">
+  <h2>CRM</h2>
+  <button onclick="showSection('dashboard')">Dashboard</button>
+  <button onclick="showSection('leads')">Leads</button>
+  <button onclick="showSection('contacts')">Contacts</button>
+  <button onclick="showSection('deals')">Deals</button>
+  <button onclick="showSection('tasks')">Tasks</button>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<div class="header">
+  <h2>CRM Dashboard</h2>
+</div>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="card active">
+  <h3>Overview</h3>
+  <p>Total Leads: <b id="leadCount">0</b></p>
+  <p>Total Deals: <b id="dealCount">0</b></p>
+</div>
+
+<!-- LEADS -->
+<div id="leads" class="card">
+  <h3>Leads</h3>
+  <input id="leadName" placeholder="Name">
+  <input id="leadEmail" placeholder="Email">
+  <button class="add" onclick="addLead()">Add</button>
+
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Action</th></tr>
+    </thead>
+    <tbody id="leadTable"></tbody>
+  </table>
+</div>
+
+<!-- CONTACTS -->
+<div id="contacts" class="card">
+  <h3>Contacts</h3>
+  <input id="contactName" placeholder="Name">
+  <input id="contactPhone" placeholder="Phone">
+  <button class="add" onclick="addContact()">Add</button>
+
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Phone</th><th>Action</th></tr>
+    </thead>
+    <tbody id="contactTable"></tbody>
+  </table>
+</div>
+
+<!-- DEALS -->
+<div id="deals" class="card">
+  <h3>Deals</h3>
+  <input id="dealName" placeholder="Deal">
+  <input id="dealValue" placeholder="Value">
+  <button class="add" onclick="addDeal()">Add</button>
+
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Value</th><th>Action</th></tr>
+    </thead>
+    <tbody id="dealTable"></tbody>
+  </table>
+</div>
+
+<!-- TASKS -->
+<div id="tasks" class="card">
+  <h3>Tasks</h3>
+  <input id="taskName" placeholder="Task">
+  <button class="add" onclick="addTask()">Add</button>
+  <ul id="taskList"></ul>
+</div>
+
+</div>
+</div>
+
+<script>
+
+// LOGIN
+function login(){
+  if(username.value==="admin" && password.value==="1234"){
+    loginPage.style.display="none";
+    crmApp.style.display="block";
+  } else {
+    error.innerText="Invalid Login";
+  }
+}
+
+function logout(){
+  location.reload();
+}
+
+// NAVIGATION
+function showSection(id){
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// STORAGE
+let leads = JSON.parse(localStorage.getItem("leads")) || [];
+let contacts = JSON.parse(localStorage.getItem("contacts")) || [];
+let deals = JSON.parse(localStorage.getItem("deals")) || [];
+
+// SAVE
+function saveData(){
+  localStorage.setItem("leads", JSON.stringify(leads));
+  localStorage.setItem("contacts", JSON.stringify(contacts));
+  localStorage.setItem("deals", JSON.stringify(deals));
+}
+
+// LEADS
+function addLead(){
+  if(leadName.value && leadEmail.value){
+    leads.push({name:leadName.value,email:leadEmail.value});
+    leadName.value=""; leadEmail.value="";
+    saveData(); renderLeads();
+  }
+}
+
+function renderLeads(){
+  leadTable.innerHTML="";
+  leads.forEach((l,i)=>{
+    leadTable.innerHTML+=`
+      <tr>
+        <td>${l.name}</td>
+        <td>${l.email}</td>
+        <td>
+          <button class="edit" onclick="editLead(${i})">Edit</button>
+          <button class="delete" onclick="deleteLead(${i})">Delete</button>
+        </td>
+      </tr>`;
+  });
+  leadCount.innerText=leads.length;
+}
+
+function deleteLead(i){ leads.splice(i,1); saveData(); renderLeads(); }
+
+function editLead(i){
+  let n=prompt("Name",leads[i].name);
+  let e=prompt("Email",leads[i].email);
+  if(n && e){ leads[i]={name:n,email:e}; saveData(); renderLeads(); }
+}
+
+// CONTACTS
+function addContact(){
+  if(contactName.value && contactPhone.value){
+    contacts.push({name:contactName.value,phone:contactPhone.value});
+    contactName.value=""; contactPhone.value="";
+    saveData(); renderContacts();
+  }
+}
+
+function renderContacts(){
+  contactTable.innerHTML="";
+  contacts.forEach((c,i)=>{
+    contactTable.innerHTML+=`
+    <tr>
+      <td>${c.name}</td>
+      <td>${c.phone}</td>
+      <td>
+        <button class="edit" onclick="editContact(${i})">Edit</button>
+        <button class="delete" onclick="deleteContact(${i})">Delete</button>
+      </td>
+    </tr>`;
+  });
+}
+
+function deleteContact(i){ contacts.splice(i,1); saveData(); renderContacts(); }
+
+function editContact(i){
+  let n=prompt("Name",contacts[i].name);
+  let p=prompt("Phone",contacts[i].phone);
+  if(n && p){ contacts[i]={name:n,phone:p}; saveData(); renderContacts(); }
+}
+
+// DEALS
+function addDeal(){
+  if(dealName.value && dealValue.value){
+    deals.push({name:dealName.value,value:dealValue.value});
+    dealName.value=""; dealValue.value="";
+    saveData(); renderDeals();
+  }
+}
+
+function renderDeals(){
+  dealTable.innerHTML="";
+  deals.forEach((d,i)=>{
+    dealTable.innerHTML+=`
+    <tr>
+      <td>${d.name}</td>
+      <td>${d.value}</td>
+      <td>
+        <button class="edit" onclick="editDeal(${i})">Edit</button>
+        <button class="delete" onclick="deleteDeal(${i})">Delete</button>
+      </td>
+    </tr>`;
+  });
+  dealCount.innerText=deals.length;
+}
+
+function deleteDeal(i){ deals.splice(i,1); saveData(); renderDeals(); }
+
+function editDeal(i){
+  let n=prompt("Deal",deals[i].name);
+  let v=prompt("Value",deals[i].value);
+  if(n && v){ deals[i]={name:n,value:v}; saveData(); renderDeals(); }
+}
+
+// TASKS
+function addTask(){
+  if(taskName.value){
+    let li=document.createElement("li");
+    li.innerHTML=`${taskName.value} <button onclick="this.parentElement.remove()">X</button>`;
+    taskList.appendChild(li);
+    taskName.value="";
+  }
+}
+
+// INIT
+renderLeads();
+renderContacts();
+renderDeals();
+
+</script>
+
+</body>
+</html>
